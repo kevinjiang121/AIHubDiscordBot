@@ -3,6 +3,7 @@ import websockets
 import json
 import os
 from dotenv import load_dotenv
+import speech_recognition as sr
 
 # Load environment variables
 load_dotenv()
@@ -18,12 +19,12 @@ async def connect_to_openai(prompt):
     async with websockets.connect(url, extra_headers=headers) as ws:
         print("Connected to OpenAI Realtime API.")
 
-        # Send a message to the server with a custom prompt from Discord
+        # Send a message to the server with the prompt
         message = {
             "type": "response.create",
             "response": {
                 "modalities": ["text"],
-                "instructions": prompt,  # Pass the prompt dynamically from the bot
+                "instructions": prompt,
             }
         }
         await ws.send(json.dumps(message))
@@ -35,6 +36,40 @@ async def connect_to_openai(prompt):
             
             # Check if valid response received from OpenAI
             if 'item' in data and 'text' in data['item']:
-                return data['item']['text']
+                print(f"OpenAI Response: {data['item']['text']}")
+                break
             else:
-                return "No valid response received from OpenAI."
+                print("No valid response received from OpenAI.")
+                break
+
+def listen_to_microphone():
+    recognizer = sr.Recognizer()
+    microphone = sr.Microphone()
+
+    print("Please speak into the microphone.")
+
+    with microphone as source:
+        recognizer.adjust_for_ambient_noise(source)
+        audio = recognizer.listen(source)
+
+    try:
+        # Use Google's speech recognition to transcribe the audio
+        prompt = recognizer.recognize_google(audio)
+        print(f"You said: {prompt}")
+        return prompt
+    except sr.UnknownValueError:
+        print("Could not understand audio.")
+        return None
+    except sr.RequestError as e:
+        print(f"Could not request results; {e}")
+        return None
+
+def main():
+    prompt = listen_to_microphone()
+    if prompt:
+        asyncio.run(connect_to_openai(prompt))
+    else:
+        print("No valid prompt to send to OpenAI.")
+
+if __name__ == "__main__":
+    main()
