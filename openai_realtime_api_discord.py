@@ -39,7 +39,8 @@ async def connect_to_openai(prompt):
                 print(f"OpenAI Response: {data['item']['text']}")
                 break
             else:
-                print("No valid response received from OpenAI.")
+                print("Response received from OpenAI:")
+                print(json.dumps(data, indent=2))
                 break
 
 def listen_to_microphone():
