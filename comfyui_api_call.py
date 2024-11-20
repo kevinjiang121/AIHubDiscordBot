@@ -76,8 +76,8 @@ def extract_seed_from_image(image_path):
         return None
 
 # Modify the prompt as needed
-prompt["3"]["inputs"]["text"] = "realistic"
-prompt["36"]["inputs"]["lora_name"] = "realistic.safetensors"
+prompt["3"]["inputs"]["text"] = "Realistic"
+prompt["36"]["inputs"]["lora_name"] = "Realisitc.safetensors"
 
 # Queue the modified prompt
 queue_prompt(prompt)
