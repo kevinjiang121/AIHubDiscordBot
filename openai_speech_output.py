@@ -9,6 +9,8 @@ client = OpenAI(
     api_key=gptapi_key, # Provide API Key in .env 
 )
 
+input_voice = input()
+
 completion = client.chat.completions.create(
     model="gpt-4o-audio-preview",
     modalities=["text", "audio"],
@@ -16,7 +18,7 @@ completion = client.chat.completions.create(
     messages=[
         {
             "role": "user",
-            "content": "Repeat this sentence back: My favorite puppy is Blue Dog"
+            "content": "Repeat this sentence back: " + input_voice
         }
     ]
 )
