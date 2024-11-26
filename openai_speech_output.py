@@ -6,7 +6,7 @@ import os
 load_dotenv();
 gptapi_key = os.getenv('GPTAPI_KEY');
 client = OpenAI(
-    api_key=gptapi_key, # Provide API Key in .env 
+    api_key=gptapi_key, 
 )
 
 input_voice = input()
@@ -26,5 +26,7 @@ completion = client.chat.completions.create(
 print(completion.choices[0])
 
 wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
-with open("dog.wav", "wb") as f:
+os.makedirs("audio", exist_ok=True)
+
+with open(os.path.join("audio", "audio.wav"), "wb") as f:
     f.write(wav_bytes)
