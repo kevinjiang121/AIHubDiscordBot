@@ -64,29 +64,29 @@ def get_images(ws, prompt):
 
     return output_images
 
-with open(json_file_path, 'r') as file:
-    prompt = json.load(file)
+def call_comfy_images(prompt_input, lora):
+    with open(json_file_path, 'r') as file:
+        prompt = json.load(file)
 
-prompt["3"]["inputs"]["text"] = input()
-prompt["36"]["inputs"]["lora_name"] = input()
-seed = random.randint(0, 2_147_483_647)
-prompt["5"]["inputs"]["seed"] = seed
-print(prompt)
+    prompt["3"]["inputs"]["text"] = prompt_input
+    prompt["36"]["inputs"]["lora_name"] = lora
+    seed = random.randint(0, 2_147_483_647)
+    prompt["5"]["inputs"]["seed"] = seed
 
-# Ensure the output folder exists
-if not os.path.exists(comfyui_output_folder):
-    os.makedirs(comfyui_output_folder)
+    if not os.path.exists(comfyui_output_folder):
+        os.makedirs(comfyui_output_folder)
 
-ws = websocket.WebSocket()
-ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
-images = get_images(ws, prompt)
-ws.close()
+    ws = websocket.WebSocket()
+    ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
+    images = get_images(ws, prompt)
+    ws.close()
+    save_images(images)
 
-# Save the images to the comfyui_output_folder
-for node_id in images:
-    for idx, image_data in enumerate(images[node_id]):
-        image = Image.open(io.BytesIO(image_data))
-        filename = f"{node_id}_{idx}.png"
-        output_path = os.path.join(destination_folder, filename)
-        image.save(output_path)
-        print(f"Image saved to {output_path}")
+def save_images(images):
+    for node_id in images:
+        for idx, image_data in enumerate(images[node_id]):
+            image = Image.open(io.BytesIO(image_data))
+            filename = f"{node_id}_{idx}.png"
+            output_path = os.path.join(destination_folder, filename)
+            image.save(output_path)
+            print(f"Image saved to {output_path}")
