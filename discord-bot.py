@@ -7,6 +7,7 @@ import os
 import calltolocalsdapi_discord
 import calltochatgptapi_discord
 import openai_realtime_api_discord  # Import the OpenAI Realtime API script
+import comfyui_api_websocket_discord
 
 load_dotenv()
 discord_token = os.getenv('DISCORD_TOKEN')  # Token stored in .env
