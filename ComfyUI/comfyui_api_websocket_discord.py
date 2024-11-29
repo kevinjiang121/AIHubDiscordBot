@@ -69,7 +69,7 @@ def call_comfy_images(prompt_input, lora):
         prompt = json.load(file)
 
     prompt["3"]["inputs"]["text"] = prompt_input
-    prompt["36"]["inputs"]["lora_name"] = lora
+    # prompt["36"]["inputs"]["lora_name"] = lora
     seed = random.randint(0, 2_147_483_647)
     prompt["5"]["inputs"]["seed"] = seed
 
