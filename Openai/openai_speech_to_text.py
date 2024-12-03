@@ -8,9 +8,10 @@ client = OpenAI(
     api_key=gptapi_key, 
 )
 
-audio_file= open("audio/audio.wav", "rb")
-transcription = client.audio.transcriptions.create(
-  model="whisper-1", 
-  file=audio_file
-)
-print(transcription.text)
+def call_openai_stt():
+  audio_file= open("audio/audio.wav", "rb")
+  transcription = client.audio.transcriptions.create(
+    model="whisper-1", 
+    file=audio_file
+  )
+  print(transcription.text)
