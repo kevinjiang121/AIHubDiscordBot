@@ -80,7 +80,12 @@ def call_comfy_images(prompt_input, lora):
     ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
     images = get_images(ws, prompt)
     ws.close()
-    save_images(images)
+    return images
+
+def get_image_output(prompt_input, lora):
+    images = call_comfy_images(prompt_input, lora)
+    image = Image.open(io.BytesIO(images["17"][0]))
+    return image
 
 def save_images(images):
     for node_id in images:
