@@ -3,14 +3,14 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-load_dotenv();
-gptapi_key = os.getenv('GPTAPI_KEY');
+load_dotenv()
+gptapi_key = os.getenv('GPTAPI_KEY')
 client = OpenAI(
     api_key=gptapi_key, 
 )
 
-def call_open_ai_speech_output():
-    input_voice = input()
+def call_open_ai_speech_output(input):
+    input_voice = input
     completion = client.chat.completions.create(
         model="gpt-4o-audio-preview",
         modalities=["text", "audio"],

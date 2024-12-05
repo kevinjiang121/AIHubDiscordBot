@@ -4,8 +4,7 @@ from dotenv import load_dotenv
 
 import io
 import os
-import calltolocalsdapi_discord
-import calltochatgptapi_discord
+import discord_ai_services as services
 import Openai.openai_realtime_api_discord as openai_realtime_api_discord  # Import the OpenAI Realtime API script
 
 load_dotenv()
@@ -17,7 +16,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.command()
 async def image(ctx, *, prompt: str):
     try:
-        image_data = calltolocalsdapi_discord.generate_image(prompt)
+        image_data = services.get_comfy_images(prompt, "")
         if image_data:
             # Send image to Discord
             with io.BytesIO(image_data) as image_file:
@@ -28,6 +27,7 @@ async def image(ctx, *, prompt: str):
         print(str(e))
         await ctx.send("Image Generator Offline")  # Typically means that the Stable Diffusion model is not running or API calls are not enabled
 
+'''
 # Call bot with !chat (insert prompt)
 @bot.command()
 async def chat(ctx, *, prompt: str):
@@ -56,6 +56,7 @@ async def realtimechat(ctx, *, prompt: str):
     except Exception as e:
         print(str(e))
         await ctx.send("Realtime API Offline")
+'''
 
 # Run the bot
 bot.run(discord_token)

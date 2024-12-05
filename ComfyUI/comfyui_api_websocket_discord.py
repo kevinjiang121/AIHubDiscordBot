@@ -65,13 +65,19 @@ def get_images(ws, prompt):
     return output_images
 
 def call_comfy_images(prompt_input, lora):
+    input_index = get_index_of_nodes()
+    seed_index = input_index[0]
+    prompt_text_index = input_index[1]
+    lora_index = input_index[2]
+    seed = random.randint(0, 2_147_483_647)
+    print("Image Generation Request Recieved")
     with open(json_file_path, 'r') as file:
         prompt = json.load(file)
 
-    prompt["3"]["inputs"]["text"] = prompt_input
-    # prompt["36"]["inputs"]["lora_name"] = lora
-    seed = random.randint(0, 2_147_483_647)
-    prompt["5"]["inputs"]["seed"] = seed
+    prompt[prompt_text_index]["inputs"]["text"] = prompt_input
+    prompt[seed_index]["inputs"]["seed"] = seed
+    if lora_index is not None:
+        prompt[lora_index]["inputs"]["lora_name"] = lora
 
     if not os.path.exists(comfyui_output_folder):
         os.makedirs(comfyui_output_folder)
@@ -83,8 +89,9 @@ def call_comfy_images(prompt_input, lora):
     return images
 
 def get_image_output(prompt_input, lora):
+    image_index = get_index_of_nodes()[3]
     images = call_comfy_images(prompt_input, lora)
-    image = Image.open(io.BytesIO(images["17"][0]))
+    image = images[image_index][0]
     return image
 
 def save_images(images):
@@ -95,3 +102,23 @@ def save_images(images):
             output_path = os.path.join(destination_folder, filename)
             image.save(output_path)
             print(f"Image saved to {output_path}")
+
+# Gets index of Positive input prompt, first Lora, and Seed (KSampler)
+def get_index_of_nodes():
+    seed = None
+    prompt = None
+    lora = None
+    image = None
+
+    with open(json_file_path, 'r') as file:
+        input_graph = json.load(file)
+    
+    for index, data in input_graph.items():
+        if data["class_type"] == "KSampler":
+            seed = index 
+            prompt = data["inputs"]["positive"][0]
+        if data["class_type"] == "LoraLoader":
+            lora = index
+        if data["class_type"] == "SaveImage":
+            image = index
+    return seed, prompt, lora, image

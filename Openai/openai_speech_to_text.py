@@ -2,8 +2,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-load_dotenv();
-gptapi_key = os.getenv('GPTAPI_KEY');
+load_dotenv()
+gptapi_key = os.getenv('GPTAPI_KEY')
 client = OpenAI(
     api_key=gptapi_key, 
 )
@@ -14,4 +14,4 @@ def call_openai_stt():
     model="whisper-1", 
     file=audio_file
   )
-  print(transcription.text)
+  return transcription.text
