@@ -27,6 +27,21 @@ async def image(ctx, *, prompt: str):
         print(str(e))
         await ctx.send("Image Generator Offline")  # Typically means that the Stable Diffusion model is not running or API calls are not enabled
 
+# Call bot with !video (insert prompt)
+@bot.command()
+async def video(ctx, *, prompt: str):
+    try:
+        video_data = services.get_comfy_video(prompt)
+        if video_data:
+            # Send video to Discord
+            with io.BytesIO(video_data) as video_file:
+                await ctx.send("Here's the video!:", file=discord.File(video_file, 'video.mp4'))
+        else:
+            await ctx.send("Failed to generate video.")
+    except Exception as e:
+        print(str(e))
+        await ctx.send("Video Generator Offline")  # Typically means that the Stable Diffusion model is not running or API calls are not enabled
+
 '''
 # Call bot with !chat (insert prompt)
 @bot.command()

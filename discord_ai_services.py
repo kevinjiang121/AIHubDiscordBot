@@ -6,6 +6,9 @@ import Openai.openai_realtime_api_discord as openai_realtime
 def get_comfy_images(prompt, lora):
     return comfy_api.get_image_output(prompt, lora)
 
+def get_comfy_video(prompt):
+    return comfy_api.get_video_output(prompt)
+
 def openai_text_to_speech(input):
     openai_tts.call_open_ai_speech_output(input)
 

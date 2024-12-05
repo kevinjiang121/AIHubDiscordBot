@@ -22,7 +22,7 @@ def call_open_ai_speech_output(input):
             }
         ]
     )
-    print(completion.choices[0])
+    save_audio_output(completion.choices[0])
 
 def save_audio_output(response):
     wav_bytes = base64.b64decode(response.message.audio.data)

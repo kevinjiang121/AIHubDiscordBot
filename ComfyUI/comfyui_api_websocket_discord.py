@@ -22,6 +22,9 @@ destination_folder = "ComfyUi Outputs"  # Folder to move the generated images
 server_address = "127.0.0.1:8188"
 client_id = str(uuid.uuid4())
 
+def set_layout_fuile_path(file_path):
+    json_file_path = file_path
+
 def queue_prompt(prompt):
     p = {"prompt": prompt, "client_id": client_id}
     data = json.dumps(p).encode('utf-8')
@@ -60,11 +63,17 @@ def get_images(ws, prompt):
             for image in node_output['images']:
                 image_data = get_image(image['filename'], image['subfolder'], image['type'])
                 images_output.append(image_data)
+        if 'gifs' in node_output:
+            for image in node_output['gifs']:
+                image_data = get_image(image['filename'], image['subfolder'], image['type'])
+                images_output.append(image_data)
         output_images[node_id] = images_output
 
     return output_images
 
 def call_comfy_images(prompt_input, lora):
+    global json_file_path
+    json_file_path = 'ComfyUI Layout/realistic.json'
     input_index = get_index_of_nodes()
     seed_index = input_index[0]
     prompt_text_index = input_index[1]
@@ -88,11 +97,37 @@ def call_comfy_images(prompt_input, lora):
     ws.close()
     return images
 
+def get_comfyui_videos(prompt_input):
+    global json_file_path
+    json_file_path = 'ComfyUI Layout/Video.json'
+    input_index = get_index_of_nodes()
+    video_index = input_index[4]
+    noise_seed_index = input_index[0]
+    seed = random.randint(0, 2_147_483_647)
+    print("Video Generation Request Recieved")
+    with open(json_file_path, 'r') as file:
+        prompt = json.load(file)
+    prompt[video_index]["inputs"]["text"] = prompt_input
+    prompt[noise_seed_index]["inputs"]["noise_seed"] = seed
+    if not os.path.exists(comfyui_output_folder):
+        os.makedirs(comfyui_output_folder)
+
+    ws = websocket.WebSocket()
+    ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
+    video = get_images(ws, prompt)
+    ws.close()
+    return video
+
 def get_image_output(prompt_input, lora):
     image_index = get_index_of_nodes()[3]
     images = call_comfy_images(prompt_input, lora)
     image = images[image_index][0]
     return image
+
+def get_video_output(prompt_input):
+    videos = get_comfyui_videos(prompt_input)
+    video = videos["98"][0]
+    return video
 
 def save_images(images):
     for node_id in images:
@@ -109,7 +144,8 @@ def get_index_of_nodes():
     prompt = None
     lora = None
     image = None
-
+    video_prompt = None
+    print(json_file_path)
     with open(json_file_path, 'r') as file:
         input_graph = json.load(file)
     
@@ -121,4 +157,8 @@ def get_index_of_nodes():
             lora = index
         if data["class_type"] == "SaveImage":
             image = index
-    return seed, prompt, lora, image
+        if data["class_type"] == "LTXVConditioning":
+            video_prompt = data["inputs"]["positive"][0]
+        if data["class_type"] == "SamplerCustom":
+            seed = index
+    return seed, prompt, lora, image, video_prompt
