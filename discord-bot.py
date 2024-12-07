@@ -31,7 +31,8 @@ async def image(ctx, *, prompt: str):
 @bot.command()
 async def video(ctx, *, prompt: str):
     try:
-        video_data = services.get_comfy_video(prompt)
+        gpt_prompt = services.openai_chat(prompt)
+        video_data = services.get_comfy_video(gpt_prompt)
         if video_data:
             # Send video to Discord
             with io.BytesIO(video_data) as video_file:

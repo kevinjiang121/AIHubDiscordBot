@@ -31,7 +31,7 @@ def queue_prompt(prompt):
     req = urllib.request.Request("http://{}/prompt".format(server_address), data=data)
     return json.loads(urllib.request.urlopen(req).read())
 
-def get_image(filename, subfolder, folder_type):
+def get_file(filename, subfolder, folder_type):
     data = {"filename": filename, "subfolder": subfolder, "type": folder_type}
     url_values = urllib.parse.urlencode(data)
     with urllib.request.urlopen("http://{}/view?{}".format(server_address, url_values)) as response:
@@ -41,9 +41,9 @@ def get_history(prompt_id):
     with urllib.request.urlopen("http://{}/history/{}".format(server_address, prompt_id)) as response:
         return json.loads(response.read())
 
-def get_images(ws, prompt):
+def get_files(ws, prompt):
     prompt_id = queue_prompt(prompt)['prompt_id']
-    output_images = {}
+    output_files = {}
     while True:
         out = ws.recv()
         if isinstance(out, str):
@@ -58,18 +58,18 @@ def get_images(ws, prompt):
     history = get_history(prompt_id)[prompt_id]
     for node_id in history['outputs']:
         node_output = history['outputs'][node_id]
-        images_output = []
+        file_output = []
         if 'images' in node_output:
             for image in node_output['images']:
-                image_data = get_image(image['filename'], image['subfolder'], image['type'])
-                images_output.append(image_data)
+                image_data = get_file(image['filename'], image['subfolder'], image['type'])
+                file_output.append(image_data)
         if 'gifs' in node_output:
-            for image in node_output['gifs']:
-                image_data = get_image(image['filename'], image['subfolder'], image['type'])
-                images_output.append(image_data)
-        output_images[node_id] = images_output
+            for video in node_output['gifs']:
+                video_data = get_file(video['filename'], video['subfolder'], video['type'])
+                file_output.append(video_data)
+        output_files[node_id] = file_output
 
-    return output_images
+    return output_files
 
 def call_comfy_images(prompt_input, lora):
     global json_file_path
@@ -93,7 +93,7 @@ def call_comfy_images(prompt_input, lora):
 
     ws = websocket.WebSocket()
     ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
-    images = get_images(ws, prompt)
+    images = get_files(ws, prompt)
     ws.close()
     return images
 
@@ -114,7 +114,7 @@ def get_comfyui_videos(prompt_input):
 
     ws = websocket.WebSocket()
     ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
-    video = get_images(ws, prompt)
+    video = get_files(ws, prompt)
     ws.close()
     return video
 
