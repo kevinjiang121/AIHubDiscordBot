@@ -1,76 +1,72 @@
-import asyncio
-import websockets
-import json
 import os
+import json
+import websocket
+from threading import Thread
 from dotenv import load_dotenv
-import speech_recognition as sr
 
-# Load environment variables
 load_dotenv()
-OPENAI_API_KEY = os.getenv('GPTAPI_KEY')
 
-async def connect_to_openai(prompt):
-    url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01"
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "OpenAI-Beta": "realtime=v1",
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17"
+headers = [
+    "Authorization: Bearer " + OPENAI_API_KEY,
+    "OpenAI-Beta: realtime=v1"
+]
+
+def on_open(ws):
+    print("Connected to server.")
+    event = {
+        "type": "response.create",
+        "response": {
+            "modalities": ["text"],
+            "model": "gpt-4o-realtime-preview-2024-12-17",
+            "instructions": "You are ChatGPT. Please assist the user with their queries."
+        }
     }
+    ws.send(json.dumps(event))
 
-    async with websockets.connect(url, extra_headers=headers) as ws:
-        print("Connected to OpenAI Realtime API.")
+def on_message(ws, message):
+    data = json.loads(message)
+    try:
+        outputs = data['response']['output']
+        for output in outputs:
+            content = output.get('content', [])
+            for item in content:
+                if item['type'] == 'text':
+                    print("ChatGPT:", item['text'])
+    except KeyError as e:
+        print(f"Key error: {e}. Full data: {json.dumps(data, indent=2)}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
-        # Send a message to the server with the prompt
-        message = {
+def on_close(ws, close_status_code, close_msg):
+    print("Disconnected from server.")
+
+def send_message(ws):
+    while True:
+        user_input = input("Enter your message (type 'exit' to quit): ")
+        if user_input.lower() == "exit":
+            ws.close()
+            break
+        event = {
             "type": "response.create",
             "response": {
                 "modalities": ["text"],
-                "instructions": prompt,
+                "instructions": user_input
             }
         }
-        await ws.send(json.dumps(message))
+        ws.send(json.dumps(event))
 
-        # Wait for incoming messages from OpenAI Realtime API
-        while True:
-            response = await ws.recv()
-            data = json.loads(response)
-            
-            # Check if valid response received from OpenAI
-            if 'item' in data and 'text' in data['item']:
-                print(f"OpenAI Response: {data['item']['text']}")
-                break
-            else:
-                print("Response received from OpenAI:")
-                print(json.dumps(data, indent=2))
-                break
+ws = websocket.WebSocketApp(
+    url,
+    header=headers,
+    on_open=on_open,
+    on_message=on_message,
+    on_close=on_close,
+)
 
-def listen_to_microphone():
-    recognizer = sr.Recognizer()
-    microphone = sr.Microphone()
+ws_thread = Thread(target=ws.run_forever)
+ws_thread.start()
 
-    print("Please speak into the microphone.")
-
-    with microphone as source:
-        recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
-
-    try:
-        # Use Google's speech recognition to transcribe the audio
-        prompt = recognizer.recognize_google(audio)
-        print(f"You said: {prompt}")
-        return prompt
-    except sr.UnknownValueError:
-        print("Could not understand audio.")
-        return None
-    except sr.RequestError as e:
-        print(f"Could not request results; {e}")
-        return None
-
-def main():
-    prompt = listen_to_microphone()
-    if prompt:
-        asyncio.run(connect_to_openai(prompt))
-    else:
-        print("No valid prompt to send to OpenAI.")
-
-if __name__ == "__main__":
-    main()
+send_message(ws)
