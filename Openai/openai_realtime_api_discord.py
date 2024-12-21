@@ -19,9 +19,15 @@ def on_open(ws):
     event = {
         "type": "response.create",
         "response": {
-            "modalities": ["text"],
+            "modalities": ["audio", "text"],
             "model": "gpt-4o-realtime-preview-2024-12-17",
-            "instructions": "You are ChatGPT. Please assist the user with their queries."
+            "instructions": "You are ChatGPT. Please assist the user with their queries.",
+            "voice": "alloy",
+            "input_audio_format": "pcm16",
+            "output_audio_format": "pcm16",
+            "input_audio_transcription": {
+                "model": "whisper-1"
+            },
         }
     }
     ws.send(json.dumps(event))
@@ -58,15 +64,16 @@ def send_message(ws):
         }
         ws.send(json.dumps(event))
 
-ws = websocket.WebSocketApp(
-    url,
-    header=headers,
-    on_open=on_open,
-    on_message=on_message,
-    on_close=on_close,
-)
+def open_websocket():
+    ws = websocket.WebSocketApp(
+        url,
+        header=headers,
+        on_open=on_open,
+        on_message=on_message,
+        on_close=on_close,
+    )
 
-ws_thread = Thread(target=ws.run_forever)
-ws_thread.start()
+    ws_thread = Thread(target=ws.run_forever)
+    ws_thread.start()
 
-send_message(ws)
+    send_message(ws)

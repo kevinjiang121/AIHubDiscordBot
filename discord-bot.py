@@ -9,6 +9,7 @@ import Openai.openai_realtime_api_discord as openai_realtime_api_discord  # Impo
 
 load_dotenv()
 discord_token = os.getenv('DISCORD_TOKEN')  # Token stored in .env
+discord_id = int(os.getenv('DISCORD_ID', 0))
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -73,6 +74,18 @@ async def realtimechat(ctx, *, prompt: str):
         print(str(e))
         await ctx.send("Realtime API Offline")
 '''
+
+@bot.command()
+async def close(ctx):
+    try:
+        if ctx.author.id == discord_id:
+            await ctx.send("Shutting down the bot...")
+            await bot.close()
+        else:
+            await ctx.send("You do not have permission to shut down the bot.")
+    except Exception as e:
+        print(str(e))
+        await ctx.send("Error occurred while shutting down the bot.")
 
 # Run the bot
 bot.run(discord_token)
