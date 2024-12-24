@@ -44,19 +44,20 @@ async def video(ctx, *, prompt: str):
         print(str(e))
         await ctx.send("Video Generator Offline")  # Typically means that the Stable Diffusion model is not running or API calls are not enabled
 
-'''
 # Call bot with !chat (insert prompt)
 @bot.command()
 async def chat(ctx, *, prompt: str):
     try:
-        gpt_response = calltochatgptapi_discord.call_chatgpt(prompt)
-        if gpt_response:
-            await ctx.send(gpt_response)
+        chat_data = services.get_comfy_chat(prompt)
+        if chat_data:
+            await ctx.send(chat_data)
         else:
-            await ctx.send("Failed to connect with GPT.")
+            await ctx.send("Failed to generate image.")
     except Exception as e:
         print(str(e))
-        await ctx.send("GPT Offline")  # Occurs when ChatGPT is down, or if token limit was reached
+        await ctx.send("Chatbot Offline")  # Typically means that the gguf model is not running or API calls are not enabled
+
+'''
 
 # Call bot with !realtimechat (insert prompt)
 @bot.command()

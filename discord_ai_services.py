@@ -10,6 +10,9 @@ def get_comfy_images(prompt, lora):
 def get_comfy_video(prompt):
     return comfy_api.get_video_output(prompt)
 
+def get_comfy_chat(prompt):
+    return comfy_api.get_chat_output(prompt)
+
 def openai_text_to_speech(input):
     openai_tts.call_open_ai_speech_output(input)
 
@@ -18,6 +21,3 @@ def openai_speech_to_text(file_path):
 
 def openai_chat(prompt):
     return openaichat.get_openai_chat_response(prompt)
-
-if __name__ == "__main__":
-    print(openai_chat("red dog"))

@@ -16,7 +16,7 @@ import random
 load_dotenv()
 
 # Define the path to the JSON file
-json_file_path = 'ComfyUI Layout/realistic.json'
+json_file_path = 'ComfyUI Layout/Chat.json'
 comfyui_output_folder = os.getenv('COMFYUI_OUTPUT')  # Path loaded from environment variable
 destination_folder = "ComfyUi Outputs"  # Folder to move the generated images
 server_address = "127.0.0.1:8188"
@@ -67,6 +67,11 @@ def get_files(ws, prompt):
             for video in node_output['gifs']:
                 video_data = get_file(video['filename'], video['subfolder'], video['type'])
                 file_output.append(video_data)
+        if 'text' in node_output:
+            for chat in node_output['text']:
+                chat_data = chat
+                file_output.append(chat_data)
+        
         output_files[node_id] = file_output
 
     return output_files
@@ -145,11 +150,11 @@ def get_index_of_nodes():
     lora = None
     image = None
     video_prompt = None
-    print(json_file_path)
     with open(json_file_path, 'r') as file:
         input_graph = json.load(file)
     
     for index, data in input_graph.items():
+        print(data["_meta"])
         if data["class_type"] == "KSampler":
             seed = index 
             prompt = data["inputs"]["positive"][0]
@@ -162,3 +167,42 @@ def get_index_of_nodes():
         if data["class_type"] == "SamplerCustom":
             seed = index
     return seed, prompt, lora, image, video_prompt
+
+def call_comfy_ui_chat(prompt_input):
+    global json_file_path
+    json_file_path = 'ComfyUI Layout/Chat.json'
+    input_index = get_index_of_nodes_chat()
+    seed_index = input_index[0]
+    prompt_text_index = input_index[1]
+    seed = random.randint(0, 2_147_483_647)
+    print("Chat Generation Request Recieved")
+    with open(json_file_path, 'r') as file:
+        prompt = json.load(file)
+
+    prompt[prompt_text_index]["inputs"]["text"] = prompt_input
+    prompt[seed_index]["inputs"]["random_seed"] = seed
+
+    ws = websocket.WebSocket()
+    ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
+    chat = get_files(ws, prompt)
+    ws.close()
+    return chat
+
+def get_chat_output(prompt_input):
+    chats = call_comfy_ui_chat(prompt_input)
+    chat = chats["22"][0]
+    return chat
+
+def get_index_of_nodes_chat():
+    seed = None
+    prompt = None
+
+    with open(json_file_path, 'r') as file:
+        input_graph = json.load(file)
+    
+    for index, data in input_graph.items():
+        if data["_meta"]["title"] == "Searge LLM Node":
+            seed = index
+            prompt = index
+
+    return seed, prompt
