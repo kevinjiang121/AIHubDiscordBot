@@ -98,8 +98,8 @@ def call_comfy_images(prompt_input, lora):
     return images
 
 def get_image_output(prompt_input, lora):
-    image_index = get_index_of_nodes_images()[3]
     images = call_comfy_images(prompt_input, lora)
+    image_index = get_index_of_nodes_images()[3]
     image = images[image_index][0]
     return image
 
@@ -210,3 +210,6 @@ def get_index_of_nodes_chat():
             output = index
 
     return seed, prompt, output
+
+if __name__ == "__main__":
+    print(get_image_output)
