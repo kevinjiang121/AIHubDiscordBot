@@ -16,15 +16,11 @@ import random
 load_dotenv()
 
 # Define the path to the JSON file
-json_file_path = 'ComfyUI Layout/Chat.json'
-comfyui_output_folder = os.getenv('COMFYUI_OUTPUT')  # Path loaded from environment variable
-destination_folder = "ComfyUi Outputs"  # Folder to move the generated images
+json_file_path = None
 server_address = "127.0.0.1:8188"
 client_id = str(uuid.uuid4())
 
-def set_layout_fuile_path(file_path):
-    json_file_path = file_path
-
+# get prompt result block
 def queue_prompt(prompt):
     p = {"prompt": prompt, "client_id": client_id}
     data = json.dumps(p).encode('utf-8')
@@ -76,10 +72,12 @@ def get_files(ws, prompt):
 
     return output_files
 
+
+# Image call
 def call_comfy_images(prompt_input, lora):
     global json_file_path
-    json_file_path = 'ComfyUI Layout/realistic.json'
-    input_index = get_index_of_nodes()
+    json_file_path = 'ComfyUI Layout/Realistic.json'
+    input_index = get_index_of_nodes_images()
     seed_index = input_index[0]
     prompt_text_index = input_index[1]
     lora_index = input_index[2]
@@ -93,20 +91,45 @@ def call_comfy_images(prompt_input, lora):
     if lora_index is not None:
         prompt[lora_index]["inputs"]["lora_name"] = lora
 
-    if not os.path.exists(comfyui_output_folder):
-        os.makedirs(comfyui_output_folder)
-
     ws = websocket.WebSocket()
     ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
     images = get_files(ws, prompt)
     ws.close()
     return images
 
+def get_image_output(prompt_input, lora):
+    image_index = get_index_of_nodes_images()[3]
+    images = call_comfy_images(prompt_input, lora)
+    image = images[image_index][0]
+    return image
+
+def get_index_of_nodes_images():
+    seed = None
+    prompt = None
+    lora = None
+    output = None
+    
+    with open(json_file_path, 'r') as file:
+        input_graph = json.load(file)
+    
+    for index, data in input_graph.items():
+        if data["class_type"] == "KSampler":
+            seed = index 
+        if data["_meta"]["title"] == "CLIP Text Encode (Prompt) Positive":
+            prompt = index
+        if data["class_type"] == "LoraLoader":
+            lora = index
+        if data["class_type"] == "SaveImage":
+            output = index
+    return seed, prompt, lora, output
+
+
+# Video Call
 def get_comfyui_videos(prompt_input):
     global json_file_path
     json_file_path = 'ComfyUI Layout/Video.json'
-    input_index = get_index_of_nodes()
-    video_index = input_index[4]
+    input_index = get_index_of_nodes_video()
+    video_index = input_index[1]
     noise_seed_index = input_index[0]
     seed = random.randint(0, 2_147_483_647)
     print("Video Generation Request Recieved")
@@ -114,8 +137,6 @@ def get_comfyui_videos(prompt_input):
         prompt = json.load(file)
     prompt[video_index]["inputs"]["text"] = prompt_input
     prompt[noise_seed_index]["inputs"]["noise_seed"] = seed
-    if not os.path.exists(comfyui_output_folder):
-        os.makedirs(comfyui_output_folder)
 
     ws = websocket.WebSocket()
     ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
@@ -123,51 +144,30 @@ def get_comfyui_videos(prompt_input):
     ws.close()
     return video
 
-def get_image_output(prompt_input, lora):
-    image_index = get_index_of_nodes()[3]
-    images = call_comfy_images(prompt_input, lora)
-    image = images[image_index][0]
-    return image
-
 def get_video_output(prompt_input):
     videos = get_comfyui_videos(prompt_input)
-    video = videos["98"][0]
+    video_output_index = get_index_of_nodes_video[2]
+    video = videos[video_output_index][0]
     return video
 
-def save_images(images):
-    for node_id in images:
-        for idx, image_data in enumerate(images[node_id]):
-            image = Image.open(io.BytesIO(image_data))
-            filename = f"{node_id}_{idx}.png"
-            output_path = os.path.join(destination_folder, filename)
-            image.save(output_path)
-            print(f"Image saved to {output_path}")
-
-# Gets index of Positive input prompt, first Lora, and Seed (KSampler)
-def get_index_of_nodes():
+def get_index_of_nodes_video():
     seed = None
-    prompt = None
-    lora = None
-    image = None
     video_prompt = None
+    output = None
     with open(json_file_path, 'r') as file:
         input_graph = json.load(file)
     
     for index, data in input_graph.items():
-        print(data["_meta"])
-        if data["class_type"] == "KSampler":
-            seed = index 
-            prompt = data["inputs"]["positive"][0]
-        if data["class_type"] == "LoraLoader":
-            lora = index
-        if data["class_type"] == "SaveImage":
-            image = index
-        if data["class_type"] == "LTXVConditioning":
-            video_prompt = data["inputs"]["positive"][0]
-        if data["class_type"] == "SamplerCustom":
+        if data["_meta"]["title"] == "CLIP Text Encode (Positive Prompt)":
+            video_prompt = index
+        if data["_meta"]["title"] == "SamplerCustom":
             seed = index
-    return seed, prompt, lora, image, video_prompt
+        if data["class_type"] == "VHS_VideoCombine":
+            output = index
+    return seed, video_prompt, output
 
+
+# Chat Call
 def call_comfy_ui_chat(prompt_input):
     global json_file_path
     json_file_path = 'ComfyUI Layout/Chat.json'
@@ -190,12 +190,14 @@ def call_comfy_ui_chat(prompt_input):
 
 def get_chat_output(prompt_input):
     chats = call_comfy_ui_chat(prompt_input)
-    chat = chats["22"][0]
+    output_index = get_index_of_nodes_chat()[2]
+    chat = chats[output_index][0]
     return chat
 
 def get_index_of_nodes_chat():
     seed = None
     prompt = None
+    output = None
 
     with open(json_file_path, 'r') as file:
         input_graph = json.load(file)
@@ -204,5 +206,7 @@ def get_index_of_nodes_chat():
         if data["_meta"]["title"] == "Searge LLM Node":
             seed = index
             prompt = index
+        if data["_meta"]["title"] == "Searge Output Node":
+            output = index
 
-    return seed, prompt
+    return seed, prompt, output
